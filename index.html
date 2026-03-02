@@ -4,17 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>特质交换信箱</title>
-    <!-- 引入 Supabase JS 库 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
             font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
-            /* 默认背景，JS加载后会替换 */
             background-color: #f0f4f8; 
             background-size: cover;
-            background-position: center bottom; /* 让小人站在底部 */
+            background-position: center bottom;
             background-repeat: no-repeat;
             min-height: 100vh;
             display: flex;
@@ -24,11 +21,9 @@
             color: #5a4a42;
             overflow-x: hidden;
         }
-
         .container {
             width: 90%;
             max-width: 550px;
-            /* 温暖信纸黄 + 半透明 + 毛玻璃效果 */
             background: rgba(255, 248, 220, 0.85); 
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
@@ -40,176 +35,62 @@
             z-index: 10;
             border: 1px solid rgba(255, 255, 255, 0.6);
         }
-
-        h1 {
-            color: #d46b6b;
-            margin-bottom: 25px;
-            font-size: 26px;
-            font-weight: bold;
-            letter-spacing: 2px;
-            text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
-        }
-
+        h1 { color: #d46b6b; margin-bottom: 25px; font-size: 26px; font-weight: bold; letter-spacing: 2px; }
         textarea {
-            width: 100%;
-            height: 140px;
-            padding: 20px;
-            border: 2px dashed #e0c9a6;
-            border-radius: 12px;
-            font-size: 17px;
-            resize: none;
-            /* 输入框内部也是半透明白色，像信纸 */
-            background: rgba(255, 255, 255, 0.65);
-            color: #5a4a42;
-            outline: none;
-            transition: all 0.3s;
-            line-height: 1.6;
-            font-family: 'KaiTi', '楷体', serif; /* 用楷体更有书信感 */
+            width: 100%; height: 140px; padding: 20px; border: 2px dashed #e0c9a6; border-radius: 12px;
+            font-size: 17px; resize: none; background: rgba(255, 255, 255, 0.65); color: #5a4a42;
+            outline: none; transition: all 0.3s; line-height: 1.6; font-family: 'KaiTi', '楷体', serif;
         }
-
-        textarea:focus {
-            border-color: #d46b6b;
-            background: rgba(255, 255, 255, 0.9);
-            box-shadow: 0 0 15px rgba(212, 107, 107, 0.2);
-            transform: scale(1.02);
-        }
-
-        textarea::placeholder {
-            color: #aaa;
-            font-style: italic;
-        }
-
+        textarea:focus { border-color: #d46b6b; background: rgba(255, 255, 255, 0.9); box-shadow: 0 0 15px rgba(212, 107, 107, 0.2); transform: scale(1.02); }
         button {
-            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
-            color: white;
-            border: none;
-            padding: 14px 45px;
-            font-size: 18px;
-            border-radius: 50px;
-            cursor: pointer;
-            margin-top: 25px;
-            transition: all 0.3s;
-            font-weight: bold;
-            box-shadow: 0 4px 15px rgba(255, 154, 158, 0.4);
-            letter-spacing: 1px;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%); color: white; border: none;
+            padding: 14px 45px; font-size: 18px; border-radius: 50px; cursor: pointer; margin-top: 25px;
+            transition: all 0.3s; font-weight: bold; box-shadow: 0 4px 15px rgba(255, 154, 158, 0.4);
         }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 154, 158, 0.6);
-        }
-
-        button:active {
-            transform: translateY(1px);
-        }
-
-        button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .status {
-            margin-top: 20px;
-            color: #888;
-            font-size: 15px;
-            line-height: 1.6;
-            background: rgba(255,255,255,0.4);
-            padding: 10px;
-            border-radius: 8px;
-        }
-
+        button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 154, 158, 0.6); }
+        button:disabled { background: #ccc; cursor: not-allowed; transform: none; box-shadow: none; }
+        .status { margin-top: 20px; color: #888; font-size: 15px; line-height: 1.6; background: rgba(255,255,255,0.4); padding: 10px; border-radius: 8px; }
         .result-box {
-            display: none;
-            text-align: left;
-            background: rgba(255, 255, 255, 0.85);
-            border: 1px solid #eecfa1;
-            padding: 25px;
-            margin-top: 25px;
-            border-radius: 15px;
-            font-size: 17px;
-            line-height: 1.8;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            position: relative;
+            display: none; text-align: left; background: rgba(255, 255, 255, 0.85); border: 1px solid #eecfa1;
+            padding: 25px; margin-top: 25px; border-radius: 15px; font-size: 17px; line-height: 1.8;
         }
-        
-        /* 信纸折角效果 */
-        .result-box::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            border-width: 0 20px 20px 0;
-            border-style: solid;
-            border-color: #f3e5ab #fff; 
-            box-shadow: -2px 2px 2px rgba(0,0,0,0.1);
-        }
-
-        .result-title {
-            font-weight: bold;
-            color: #d46b6b;
-            margin-bottom: 8px;
-            display: block;
-        }
-
-        .hidden {
-            display: none;
-        }
-        
-        /* 移动端适配 */
-        @media (max-width: 600px) {
-            .container {
-                padding: 30px 20px;
-                width: 85%;
-            }
-            h1 { font-size: 22px; }
-            textarea { height: 120px; font-size: 16px; }
-        }
+        .hidden { display: none; }
+        @media (max-width: 600px) { .container { padding: 30px 20px; width: 85%; } h1 { font-size: 22px; } }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>💌 特质交换信箱</h1>
-    
     <div id="input-area">
         <p style="margin-bottom: 10px; color: #666;">请写下对方的特质：</p>
-        <textarea id="trait-input" placeholder="例如：温柔、像小太阳一样、总是能逗我笑..." onfocus="handleFocus()"></textarea>
+        <textarea id="trait-input" placeholder="例如：温柔、像小太阳一样..." onfocus="handleFocus()"></textarea>
         <br>
         <button id="submit-btn" onclick="submitTrait()">投入信箱</button>
         <p class="status" id="status-text">正在初始化房间...</p>
     </div>
-
     <div id="result-area" class="hidden">
         <h2 style="color: #d46b6b; margin-bottom: 20px;">🎉 信件交换成功！</h2>
-        
         <div class="result-box" style="display:block;">
             <span class="result-title">✨ 对方写给你的：</span>
             <p id="other-trait" style="font-style: italic; color: #555; margin-top:5px;">加载中...</p>
         </div>
-
         <div class="result-box" style="display:block; background: rgba(255,255,255,0.5); border-style: dotted;">
             <span class="result-title">📝 你写给对方的：</span>
             <p id="my-trait" style="color: #888; margin-top:5px;"></p>
         </div>
-        
-        <p style="margin-top: 20px; font-size: 14px; color: #999;">截图保存这份美好吧~</p>
     </div>
 </div>
 
 <script>
-    // ================= ⚙️ 配置区域 (请确保这里填对了) =================
-    const SUPABASE_URL = 'https://tiobxvolzuzctdzfpjjv.supabase.co'; 
-    const SUPABASE_KEY = 'sb_publishable_KpAXg4CpblmnvZoWTlegyQ_v4OOJM_D'; // 记得填入你之前复制的 Key
-    
-    // 👇👇👇 重要：把这里的 '你的GitHub用户名' 换成你真实的 GitHub ID 👇👇👇
+    // ================= 配置区域 =================
+    const SUPABASE_URL = 'https://tiobxvolzuzctdzfpjjv.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_KpAXg4CpblmnvZoWTlegyQ_v400J...'; // ⚠️ 记得填你的 Key
     const GITHUB_USER = 'cyxFF8899'; 
-    // ================================================================
+    // ===========================================
 
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // 图片资源映射
     const IMAGES = {
         waiting: `https://raw.githubusercontent.com/${GITHUB_USER}/trait-mailbox/main/bg-waiting.png`,
         writing: `https://raw.githubusercontent.com/${GITHUB_USER}/trait-mailbox/main/bg-writing.png`,
@@ -217,23 +98,20 @@
         success: `https://raw.githubusercontent.com/${GITHUB_USER}/trait-mailbox/main/bg-success.png`
     };
 
-    // 设置背景函数
     function setBackground(imageName) {
         if(IMAGES[imageName]) {
             document.body.style.backgroundImage = `url('${IMAGES[imageName]}')`;
         }
     }
 
-    // 获取房间ID
     const urlParams = new URLSearchParams(window.location.search);
     let roomId = urlParams.get('room');
 
-    // 初始化房间
     if (!roomId) {
         roomId = Math.random().toString(36).substring(2, 8); 
         const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?room=' + roomId;
         window.history.replaceState({path:newUrl},'',newUrl);
-        document.getElementById('status-text').innerHTML = `房间已创建！<br>复制链接发给朋友吧：<br><strong style="color:#d46b6b; user-select:all;">${newUrl}</strong>`;
+        document.getElementById('status-text').innerHTML = `房间已创建！<br>复制链接发给朋友吧：<br><strong style="color:#d46b6b;">${newUrl}</strong>`;
         setBackground('waiting');
     } else {
         document.getElementById('status-text').innerText = `房间号：${roomId}，等待双方写入...`;
@@ -241,28 +119,21 @@
         listenForUpdates();
     }
 
-    // 处理输入框焦点（换背景）
     function handleFocus() {
         setBackground('writing');
     }
-    
-    // 失去焦点时如果还没提交，可以切回 waiting，或者保持 writing 让用户有沉浸感
-    // 这里我们选择保持 writing 直到提交，体验更连贯
 
     async function submitTrait() {
         const text = document.getElementById('trait-input').value;
-        if (!text.trim()) return alert("信纸还是空的哦，先写点什么吧！");
+        if (!text.trim()) return alert("信纸还是空的哦！");
 
         const btn = document.getElementById('submit-btn');
         const statusText = document.getElementById('status-text');
         
         btn.disabled = true;
         btn.innerText = "信件飞行中...";
-        
-        // 临时保存本地
         localStorage.setItem('my_text_' + roomId, text);
 
-        // 检查当前是第几个人
         const { data: existingData } = await supabase.from('messages').select('*').eq('room_id', roomId).single();
 
         let updateData = {};
@@ -280,7 +151,6 @@
             return;
         }
 
-        // 写入数据库 (upsert 会更新或插入)
         const { error } = await supabase.from('messages').upsert(updateData);
 
         if (error) {
@@ -290,9 +160,7 @@
         } else {
             btn.innerText = "✅ 已投入信箱";
             statusText.innerText = "信件已送达，等待对方也写完...";
-            setBackground('submitted'); // 切换成抱着信封的图
-            
-            // 如果是第一个人，提示他分享链接
+            setBackground('submitted');
             if(isUserA && !existingData) {
                  statusText.innerHTML += `<br><span style="font-size:12px; color:#d46b6b;">(别忘了把链接发给对方哦)</span>`;
             }
@@ -300,14 +168,12 @@
     }
 
     function listenForUpdates() {
-        // 实时监听
         supabase.channel('room-' + roomId)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `room_id=eq.${roomId}` }, payload => {
                 checkCompletion(payload.new);
             })
             .subscribe();
         
-        // 初始检查
         supabase.from('messages').select('*').eq('room_id', roomId).single().then(({ data }) => {
             if(data) checkCompletion(data);
         });
@@ -315,24 +181,13 @@
 
     function checkCompletion(data) {
         if (data && data.user_a && data.user_b) {
-            // 两人都写完了
             document.getElementById('input-area').classList.add('hidden');
             document.getElementById('result-area').classList.remove('hidden');
-            setBackground('success'); // 切换成撒花庆祝的图
+            setBackground('success');
             
             const myText = localStorage.getItem('my_text_' + roomId) || "未知内容";
+            let otherText = (myText === data.user_a) ? data.user_b : data.user_a;
             
-            // 简单的逻辑：如果本地存的是 user_a 的内容，那对方就是 user_b，反之亦然
-            // 注意：如果用户清除了缓存或换了设备，这里可能显示反了，但在简易版中可接受
-            let otherText = "";
-            if (myText === data.user_a) {
-                otherText = data.user_b;
-            } else {
-                otherText = data.user_a;
-            }
-
-            // 如果本地没存到（比如换了设备），就随机显示一个作为“对方”，另一个作为“自己”
-            // 为了体验，我们假设用户不会中途换设备清除缓存
             document.getElementById('other-trait').innerText = otherText;
             document.getElementById('my-trait').innerText = myText;
         }
