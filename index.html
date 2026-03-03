@@ -120,4 +120,128 @@
         let roomId = new URLSearchParams(window.location.search).get('room');
 
         if (!roomId) {
-            roomId = Math.random().toStr
+            roomId = Math.random().toString(36).substring(2, 8);
+            window.history.replaceState({}, '', `?room=${roomId}`);
+            document.getElementById('status-text').innerText = `房间号：${roomId}，等待双方写入...`;
+        } else {
+            document.getElementById('status-text').innerText = `房间号：${roomId}，等待双方写入...`;
+        }
+
+        // 页面加载完成后，确保窗口是小巧的
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.querySelector('.container');
+            if (!container.classList.contains('large')) {
+                container.classList.add('small'); // 其实默认就是 small，但为了保险
+            }
+        });
+
+        function handleFocus() { 
+            setBackground('writing');
+            document.querySelector('.container').classList.add('large'); // 展开
+        }
+
+        function handleBlur() {
+            // 如果还没有提交，就收缩回去
+            const btn = document.getElementById('submit-btn');
+            if (!btn.disabled) {
+                document.querySelector('.container').classList.remove('large'); // 收缩
+            }
+        }
+
+        async function submitTrait() {
+            const trait = document.getElementById('trait-input').value.trim();
+            const btn = document.getElementById('submit-btn');
+            const status = document.getElementById('status-text');
+
+            if (!trait) {
+                alert('请先写下对方的特质哦~');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = "⏳ 提交中...";
+            status.innerText = "正在存入数据库...";
+
+            try {
+                const { data: existingData, error: fetchError } = await client.from('messages').select('*').eq('room_id', roomId).single();
+
+                let updateData = { room_id: roomId };
+                if (!existingData || !existingData.user_a) {
+                    updateData.user_a = trait;
+                    status.innerText = "✅ 第一位用户已提交！等待第二位...";
+                } else if (!existingData.user_b) {
+                    updateData.user_b = trait;
+                    status.innerText = "✅ 第二位用户已提交！正在匹配...";
+                } else {
+                    alert('这个房间已经完成交换啦！刷新页面重新开始吧~');
+                    btn.disabled = false;
+                    btn.innerText = "投入信箱";
+                    return;
+                }
+
+                const { error } = await client.from('messages').upsert(updateData);
+
+                if (error) throw error;
+
+                localStorage.setItem('my_text_' + roomId, trait);
+                setBackground('submitted');
+                btn.innerText = "✅ 已投入信箱";
+                status.innerText = "等待对方也写完哦～";
+
+                // 提交后收缩窗口
+                document.querySelector('.container').classList.remove('large');
+
+                if (!existingData || !existingData.user_a || !existingData.user_b) {
+                    listenForUpdates();
+                } else {
+                    checkCompletion(existingData);
+                }
+
+            } catch (err) {
+                console.error('提交失败:', err);
+                alert('提交失败，请检查网络或稍后再试~');
+                btn.disabled = false;
+                btn.innerText = "重试";
+                status.innerText = "提交出错，请重试";
+            }
+        }
+
+        function listenForUpdates() {
+            client.channel('room-' + roomId)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `room_id=eq.${roomId}` }, payload => {
+                    checkCompletion(payload.new);
+                })
+                .subscribe();
+
+            client.from('messages').select('*').eq('room_id', roomId).single().then(({ data, error }) => {
+                if (!error && data) checkCompletion(data);
+            });
+        }
+
+        function checkCompletion(data) {
+            if (data && data.user_a && data.user_b) {
+                // 先隐藏输入区，但暂时不显示结果区
+                document.getElementById('input-area').classList.add('hidden');
+                
+                // 设置一个 5 秒的定时器
+                setTimeout(function() {
+                    // 5 秒后，显示结果区，并展开窗口
+                    document.getElementById('result-area').classList.remove('hidden');
+                    document.querySelector('.container').classList.add('large'); // 展开以显示内容
+                    setBackground('success');
+                    
+                    const myText = localStorage.getItem('my_text_' + roomId) || "未知内容";
+                    let otherText = (myText === data.user_a) ? data.user_b : data.user_a;
+                    
+                    document.getElementById('other-trait').innerText = otherText;
+                    document.getElementById('my-trait').innerText = myText;
+                }, 5000); // 5000 毫秒 = 5 秒
+            }
+        }
+
+        // 初始化背景
+        setBackground('waiting');
+        listenForUpdates();
+    </script>
+</body>
+</html>
